@@ -38,3 +38,10 @@ The Callsign Discord Bot is a Python-based bot that interacts with users on a Di
 git clone https://github.com/yourusername/callsign-discord-bot.git
 cd callsign-discord-bot
 
+### 3. Fire it up
+
+In terminal/command prompt, go to the folder where you've cloned the repo and run:
+`python callsign.py`
+
+You should be up and running! 
+
