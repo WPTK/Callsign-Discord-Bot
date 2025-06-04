@@ -39,8 +39,18 @@ cd callsign-discord-bot`
 
 ### 3. Fire it up
 
-In terminal/command prompt, go to the folder where you've cloned the repo and run:
-`python callsign.py`
+Install the dependencies using `pip`:
 
-You should be up and running! 
+```bash
+pip install -r requirements.txt
+```
+
+Ensure `Callsigns.xlsx` is located in the same directory as `callsign.py`.
+Set your Discord bot token in the `DISCORD_TOKEN` environment variable and run:
+
+```bash
+python callsign.py
+```
+
+You should be up and running!
 

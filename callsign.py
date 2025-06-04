@@ -1,13 +1,17 @@
+import os
+from pathlib import Path
 import discord
 import pandas as pd
-import numpy as np
 
-# Load the Excel file
-file_path = 'C:\\ADSBxCallsigns\\Callsigns.xlsx'
-df = pd.read_excel(file_path)
+# Load the Excel file relative to this script
+base_dir = Path(__file__).resolve().parent
+file_path = base_dir / 'Callsigns.xlsx'
 
-# Convert all values to strings to avoid issues with nan
-df = df.astype(str)
+if not file_path.is_file():
+    raise FileNotFoundError(f'Data file not found: {file_path}')
+
+# Read the spreadsheet and replace NaN with empty strings
+df = pd.read_excel(file_path, dtype=str).fillna('')
 
 # Convert all relevant columns to uppercase to ensure case-insensitive search
 df['CALLSIGN'] = df['CALLSIGN'].str.upper()
@@ -202,8 +206,11 @@ async def on_message(message):
 
         # Check if the message starts with "!callsign"
         if message.content.startswith('!callsign'):
-            # Extract the keyword and convert to uppercase
-            keyword = message.content[len('!callsign '):].strip().upper()
+            parts = message.content.split(maxsplit=1)
+            if len(parts) < 2:
+                await message.channel.send('Usage: !callsign <keyword>')
+                return
+            keyword = parts[1].strip().upper()
 
             # Search for the keyword in the "CALLSIGN" and "SSR INDICATION" columns
             result = df[(df['CALLSIGN'] == keyword) | (df['SSR INDICATION'] == keyword)]
@@ -212,23 +219,25 @@ async def on_message(message):
                 # Check for exact duplicates
                 if len(result) > 1:
                     row = result.iloc[0]
-                    country = row['COUNTRY'] if row['COUNTRY'] != 'nan' else ''
+                    country = row['COUNTRY'] or ''
                     country_flag = country_flags.get(country.upper(), '')
                     final_response = (f"> **Callsign:** {row['CALLSIGN']}\n"
-                                      f"> **Unit / Operator:** {row['UNIT / OPERATOR'] if row['UNIT / OPERATOR'] != 'nan' else ''}\n"
-                                      f"> **Force:** {row['FORCE'] if row['FORCE'] != 'nan' else ''}\n"
+                                      f"> **Unit / Operator:** {row['UNIT / OPERATOR'] or ''}\n"
+                                      f"> **Force:** {row['FORCE'] or ''}\n"
                                       f"> **Country:** {country} {country_flag}\n"
-                                      f"> **Note:** {row['NOTE'] if row['NOTE'] != 'nan' else ''}\n")
+                                      f"> **Note:** {row['NOTE'] or ''}\n")
                 else:
                     responses = []
                     for _, row in result.iterrows():
-                        country = row['COUNTRY'] if row['COUNTRY'] != 'nan' else ''
+                        country = row['COUNTRY'] or ''
                         country_flag = country_flags.get(country.upper(), '')
-                        response = (f"> **Callsign:** {row['CALLSIGN']}\n"
-                                    f"> **Unit / Operator:** {row['UNIT / OPERATOR'] if row['UNIT / OPERATOR'] != 'nan' else ''}\n"
-                                    f"> **Force:** {row['FORCE'] if row['FORCE'] != 'nan' else ''}\n"
-                                    f"> **Country:** {country} {country_flag}\n"
-                                    f"> **Note:** {row['NOTE'] if row['NOTE'] != 'nan' else ''}\n")
+                        response = (
+                            f"> **Callsign:** {row['CALLSIGN']}\n"
+                            f"> **Unit / Operator:** {row['UNIT / OPERATOR'] or ''}\n"
+                            f"> **Force:** {row['FORCE'] or ''}\n"
+                            f"> **Country:** {country} {country_flag}\n"
+                            f"> **Note:** {row['NOTE'] or ''}\n"
+                        )
                         responses.append(response)
                     final_response = "\n".join(responses)
             else:
@@ -240,5 +249,8 @@ async def on_message(message):
         # Print any errors that occur
         print(f'Error: {e}')
 
-# Run the bot with your token
-client.run('YOUR_DISCORD_BOT_TOKEN')
+if __name__ == '__main__':
+    token = os.environ.get('DISCORD_TOKEN')
+    if not token:
+        raise RuntimeError('DISCORD_TOKEN environment variable not set')
+    client.run(token)
